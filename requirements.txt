@@ -1,0 +1,12 @@
+numpy
+opencv-python
+pandas
+Pillow
+requests
+streamlit
+streamlit-lottie
+streamlit-option-menu
+tensorflow
+matplotlib
+keras
+
