@@ -2,6 +2,11 @@
 
 This project is designed to detect plant leaf diseases using a machine learning model. The app is built with Python and uses Streamlit for the user interface. Follow the steps below to set up and run the app locally.
 
+## Site Url
+
+https://leaf-guard.streamlit.app/
+
+
 ## Setup and Run Instructions
 
 ### 1. Clone the repository
