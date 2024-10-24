@@ -31,10 +31,11 @@ hide_sidebar_style = """
 st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 
 # Topbar Navigation
+# Define the selected option
 selected = option_menu(
     menu_title=None,  # No need for a title
-    options=["Home", "Disease Detector", "Blog", "Graphs"],
-    icons=["house", "search", "book", "bar-chart"],
+    options=["Home", "Disease Detector", "Blog", "Graphs", "Logout"],
+    icons=["house", "search", "book", "bar-chart", "power"],
     menu_icon="cast", 
     default_index=0,
     orientation="horizontal",  # This ensures the menu is horizontal
@@ -77,6 +78,20 @@ selected = option_menu(
         },
     }
 )
+
+# Handle logout
+if selected == "Logout":
+    # Redirect to the specified URL
+    st.markdown(
+        f"""
+        <meta http-equiv="refresh" content="0; url=https://lpm26cx1-5173.inc1.devtunnels.ms/" />
+        """,
+        unsafe_allow_html=True
+    )
+else:
+    # Render the selected page content
+    st.write(f"You selected: {selected}")
+
 
 # Function to load Lottie animations from a local file
 def load_lottie_file(filepath: str):

@@ -9,4 +9,5 @@ streamlit-option-menu
 tensorflow
 matplotlib
 keras
+requests
 
