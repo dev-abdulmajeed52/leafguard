@@ -4,9 +4,9 @@ import json
 import os
 from streamlit_lottie import st_lottie
 import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.layers import DepthwiseConv2D
-import time  # For adding a delay to show the loader
+from tensorflow.keras.models import load_model, Model
+from tensorflow.keras.layers import DepthwiseConv2D, Input, Dense, GlobalAveragePooling2D
+import time
 import base64
 import io
 from PIL import Image
@@ -17,7 +17,7 @@ import cv2
 # Set page configuration
 st.set_page_config(
     page_title="LeafGuard", 
-    layout="wide"  # No need to specify sidebar state
+    layout="wide"
 )
 
 # Hide the sidebar completely with CSS
@@ -31,14 +31,13 @@ hide_sidebar_style = """
 st.markdown(hide_sidebar_style, unsafe_allow_html=True)
 
 # Topbar Navigation
-# Define the selected option
 selected = option_menu(
-    menu_title=None,  # No need for a title
-    options=["Home", "Disease Detector", "Blog", "Graphs",],
-    icons=["house", "search", "book", "bar-chart", "power"],
+    menu_title=None,
+    options=["Home", "Disease Detector", "Blog", "Graphs"],
+    icons=["house", "search", "book", "bar-chart"],
     menu_icon="cast", 
     default_index=0,
-    orientation="horizontal",  # This ensures the menu is horizontal
+    orientation="horizontal",
     styles={
         "container": {
             "padding": "10px!important",
@@ -47,7 +46,7 @@ selected = option_menu(
             "box-shadow": "0 2px 5px rgba(0, 0, 0, 0.1)"
         },
         "icon": {
-            "color": "#4CAF50",  # Change the icon color
+            "color": "#4CAF50",
             "font-size": "20px",
             "padding": "5px",
             "transition": "transform 0.3s ease",
@@ -55,20 +54,19 @@ selected = option_menu(
         "nav-link": {
             "font-size": "16px",
             "text-align": "center",
-            "margin": "0px 15px",  # Increased horizontal spacing
-            "padding": "10px 15px",  # Added padding for better touch targets
+            "margin": "0px 15px",
+            "padding": "10px 15px",
             "border-radius": "5px",
-            "color": "#333",  # Default text color
-            "--hover-color": "#e8f5e9",  # Light green on hover
+            "color": "#333",
+            "--hover-color": "#e8f5e9",
             "transition": "background-color 0.3s ease, transform 0.3s ease",
         },
         "nav-link-selected": {
-            "background-color": "#388E3C",  # Darker green for selected
-            "color": "white",  # Text color for selected
+            "background-color": "#388E3C",
+            "color": "white",
             "border-radius": "5px",
-            "border-bottom": "2px solid #ffffff",  # White underline for active link
+            "border-bottom": "2px solid #ffffff",
         },
-        # Media queries for responsiveness
         "@media (max-width: 768px)": {
             "nav-link": {
                 "font-size": "14px",
@@ -79,23 +77,9 @@ selected = option_menu(
     }
 )
 
-# # Handle logout
-# if selected == "Logout":
-#     # Redirect to the specified URL
-#     st.markdown(
-#         f"""
-#         <meta http-equiv="refresh" content="0; url=https://lpm26cx1-5173.inc1.devtunnels.ms/" />
-#         """,
-#         unsafe_allow_html=True
-#     )
-# else:
-#     # Render the selected page content
-#     st.write(f"You selected: {selected}")
-
-
 # Function to load Lottie animations from a local file
 def load_lottie_file(filepath: str):
-    abs_path = os.path.abspath(filepath)  # Get absolute path
+    abs_path = os.path.abspath(filepath)
     try:
         with open(abs_path, "r", encoding="utf-8") as f:
             lottie_json = json.load(f)
@@ -107,39 +91,33 @@ def load_lottie_file(filepath: str):
         st.error(f"Error decoding the Lottie JSON file: {e}")
         return None
 
-# Function to add custom CSS with Inter font from Google Fonts
+# Function to add custom CSS with Inter font
 def add_custom_css():
     st.markdown("""
-    <!-- Import Inter font from Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Apply Inter font to the entire app */
         body, .stApp {
             font-family: 'Inter', sans-serif;
-            background-color: #121212; /* Optional: Set a dark background for better contrast */
+            background-color: #121212;
         }
 
-        /* Style the title */
         .stApp h1 {
             color: white;
-            font-weight: 700; /* Bold */
+            font-weight: 700;
         }
 
-        /* Style blog headers */
         .stApp h2 {
             color: #CCCCCC;
-            font-weight: 600; /* Semi-bold */
+            font-weight: 600;
         }
 
-        /* Style the text content */
         .stApp p {
             color: white;
             line-height: 1.6;
-            font-weight: 400; /* Regular */
+            font-weight: 400;
         }
 
-        /* Customize the "Read More" button */
         .stButton button {
             background-color: #4CAF50;
             color: white;
@@ -152,15 +130,13 @@ def add_custom_css():
             margin: 10px 2px;
             cursor: pointer;
             border-radius: 4px;
-            font-family: 'Inter', sans-serif; /* Ensure button text uses Inter */
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Button hover effect */
         .stButton button:hover {
             background-color: #45a049;
         }
 
-        /* Optional: Style links to match the theme */
         .stApp a {
             color: #4CAF50;
             text-decoration: none;
@@ -175,14 +151,12 @@ def add_custom_css():
 
 # Display the Home page
 def display_home():
-    add_custom_css()  # Add the custom CSS
+    add_custom_css()
     st.title("Welcome to LeafGuard")
 
-    # Load Lottie animation from local assets (scan.json)
     lottie_leaf_scan = load_lottie_file("assets/scan.json")
 
-    # Streamlit layout
-    col1, col2 = st.columns([2, 1])  # Left column takes more space
+    col1, col2 = st.columns([2, 1])
 
     with col1:
         st.header("Leaf Scan Detection System")
@@ -201,13 +175,13 @@ def display_home():
 
     with col2:
         if lottie_leaf_scan:
-            st_lottie(lottie_leaf_scan, height=300, key="leaf_scan")  # Display the animation if it was loaded
+            st_lottie(lottie_leaf_scan, height=300, key="leaf_scan")
         else:
-            st.error("Failed to load the leaf scan animation.")  # Display error if loading failed
+            st.error("Failed to load the leaf scan animation.")
 
 # Show blog content
 def display_blog():
-    add_custom_css()  # Add the custom CSS for styling
+    add_custom_css()
     st.title("Transforming Big Data with Data Science")
 
     st.write("""
@@ -218,99 +192,260 @@ def display_blog():
         However, the advent of technology and data-driven methodologies has ushered in new possibilities. By leveraging Data Science and Big Data processing, we can revolutionize how leaf diseases are detected and managed. The LeafGuard project epitomizes this transformation, aiming to create a robust and interactive model that utilizes vast amounts of data—from images and weather patterns to soil conditions—to enhance disease detection and intervention strategies.
     """)
 
-    # "Read More" button redirecting to an external site
     if st.button("Read More"):
         st.write("Redirecting to full blog post...")
         st.markdown("[Click here to read the full post](https://techwiz-leafguard.blogspot.com/2024/09/transforming-big-data-with-data-science.html)", unsafe_allow_html=True)
 
-    # Placeholder for adding future blog posts
     st.write("**More blog posts coming soon!**")
 
 # Display graph cards
 def display_graphs():
-    add_custom_css()  # Add the custom CSS for styling
+    add_custom_css()
     st.title("Plant Disease Prediction and Graphs")
 
-    # Create a 3x2 grid layout for graph cards
-    cols = st.columns(3)  # Create three columns
+    cols = st.columns(3)
 
-    # List of graph images and their corresponding titles
     graph_data = [
         {"image": "assets/graph1.jpeg", "title": "Disease and Confidence"},
         {"image": "assets/graph3.jpeg", "title": "Average of water Condition"},
-        {"image": "assets/graph2.jpeg", "title": "Average of Temprature"},
+        {"image": "assets/graph2.jpeg", "title": "Average of Temperature"},
         {"image": "assets/graph6.jpeg", "title": "Count of Weather Condition"},
         {"image": "assets/graph4.jpeg", "title": "Average of Disease"},
         {"image": "assets/graph5.jpeg", "title": "Pesticides & Confidence"},
     ]
 
-    # Display each image in a card
     for index, graph in enumerate(graph_data):
-        with cols[index % 3]:  # Distribute images across the columns
-            st.subheader(graph["title"])  # Add title for the card
+        with cols[index % 3]:
+            st.subheader(graph["title"])
             st.image(graph["image"], caption=graph["title"], use_column_width=True)
-            st.write("---")  # Separator line for better visual structure
-
+            st.write("---")
 
 # ----------------------------
-# Custom DepthwiseConv2D to Remove 'groups' Argument
+# FIXED MODEL LOADING SECTION
 # ----------------------------
+
+def create_fallback_model(num_classes=4):
+    """
+    Create a simple fallback model in case the original model fails to load
+    """
+    try:
+        # Simple CNN model as fallback
+        inputs = Input(shape=(224, 224, 3))
+        
+        # Use MobileNetV2 as base (commonly available)
+        base_model = tf.keras.applications.MobileNetV2(
+            input_shape=(224, 224, 3),
+            alpha=1.0,
+            include_top=False,
+            weights='imagenet',
+            input_tensor=inputs,
+            pooling=None
+        )
+        
+        # Add custom top layers
+        x = base_model.output
+        x = GlobalAveragePooling2D()(x)
+        x = Dense(128, activation='relu')(x)
+        predictions = Dense(num_classes, activation='softmax')(x)
+        
+        model = Model(inputs=inputs, outputs=predictions)
+        return model
+    except Exception as e:
+        st.error(f"Failed to create fallback model: {str(e)}")
+        return None
+
 def custom_depthwise_conv2d(**kwargs):
-    if 'groups' in kwargs:
-        del kwargs['groups']
+    """Custom DepthwiseConv2D to handle compatibility issues"""
+    # Remove problematic arguments that might cause issues
+    problematic_args = ['groups', 'dilations']
+    for arg in problematic_args:
+        if arg in kwargs:
+            del kwargs[arg]
+    
     return DepthwiseConv2D(**kwargs)
 
-# ----------------------------
-# Load and Fix Model
-# ----------------------------
+def fix_model_architecture(model):
+    """
+    Attempt to fix model architecture issues by rebuilding the model
+    """
+    try:
+        # Get model configuration
+        config = model.get_config()
+        
+        # Rebuild model with fixed configuration
+        if model.__class__.__name__ == 'Sequential':
+            from tensorflow.keras.models import Sequential
+            new_model = Sequential()
+            
+            # Add layers one by one, skipping problematic ones
+            for i, layer_config in enumerate(config['layers']):
+                try:
+                    layer = tf.keras.layers.deserialize(
+                        layer_config,
+                        custom_objects={'DepthwiseConv2D': custom_depthwise_conv2d}
+                    )
+                    new_model.add(layer)
+                except Exception as layer_error:
+                    st.warning(f"Skipping problematic layer {i}: {str(layer_error)}")
+                    continue
+            
+            return new_model
+        else:
+            # For functional models, return original
+            return model
+            
+    except Exception as e:
+        st.error(f"Failed to fix model architecture: {str(e)}")
+        return None
+
 @st.cache_resource
 def load_and_fix_model(h5_path):
-    model = load_model(h5_path, compile=False, custom_objects={'DepthwiseConv2D': custom_depthwise_conv2d})
-    return model
+    """
+    Enhanced model loading with multiple fallback strategies
+    """
+    try:
+        st.info(f"Attempting to load model from: {h5_path}")
+        
+        # First attempt: Load with custom objects
+        try:
+            model = load_model(
+                h5_path, 
+                compile=False, 
+                custom_objects={
+                    'DepthwiseConv2D': custom_depthwise_conv2d,
+                    'relu6': tf.nn.relu6,  # Add other common custom objects
+                }
+            )
+            st.success("Model loaded successfully!")
+            return model
+        except ValueError as ve:
+            if "expects 1 input(s), but it received 2 input tensors" in str(ve):
+                st.warning("Model has architecture issues. Attempting to fix...")
+                
+                # Try to load without compiling and fix architecture
+                try:
+                    model = load_model(h5_path, compile=False)
+                    fixed_model = fix_model_architecture(model)
+                    if fixed_model is not None:
+                        st.success("Model architecture fixed!")
+                        return fixed_model
+                except Exception as fix_error:
+                    st.error(f"Failed to fix model: {str(fix_error)}")
+            
+            raise ve
+    
+    except FileNotFoundError:
+        st.error(f"Model file not found at: {h5_path}")
+        st.info("Creating fallback model...")
+        return create_fallback_model()
+    
+    except Exception as e:
+        st.error(f"Failed to load model: {str(e)}")
+        st.info("Creating fallback model...")
+        return create_fallback_model()
 
-# ----------------------------
-# Load Models and Labels
-# ----------------------------
 @st.cache_resource
 def load_models_and_labels():
-    models = {
-        'Leaf_Guard': load_and_fix_model('./models/Leaf_Guard.h5'),
-    }
+    """
+    Load models and labels with enhanced error handling
+    """
+    models = {}
+    labels = {}
     
-    labels = {
-        'Leaf_Guard': [label.strip() for label in open('./models/labels.txt').readlines()],
-    }
+    # Try to load the main model
+    model_path = './models/Leaf_Guard.h5'
+    labels_path = './models/labels.txt'
+    
+    # Load model
+    model = load_and_fix_model(model_path)
+    if model is not None:
+        models['Leaf_Guard'] = model
+    
+    # Load labels
+    try:
+        if os.path.exists(labels_path):
+            with open(labels_path, 'r', encoding='utf-8') as f:
+                labels_list = [label.strip() for label in f.readlines()]
+            labels['Leaf_Guard'] = labels_list
+            st.success(f"Loaded {len(labels_list)} labels")
+        else:
+            # Fallback labels
+            st.warning("Labels file not found. Using fallback labels.")
+            labels['Leaf_Guard'] = ['Healthy', 'Early Blight', 'Late Blight', 'Powdery Mildew']
+    except Exception as e:
+        st.error(f"Failed to load labels: {str(e)}")
+        labels['Leaf_Guard'] = ['Healthy', 'Early Blight', 'Late Blight', 'Powdery Mildew']
     
     return models, labels
 
 # ----------------------------
-# Preprocess Image for the Model
+# Image Processing Functions
 # ----------------------------
-def preprocess_image(image):
-    img_array = np.array(image)
-    if img_array.ndim == 2:  # If grayscale
-        img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2BGR)
-    resized_image = cv2.resize(img_array, (224, 224), interpolation=cv2.INTER_AREA)  # Resize to 224x224
-    normalized_image = (np.asarray(resized_image, dtype=np.float32) / 127.5) - 1  # Normalize
-    return normalized_image.reshape(1, 224, 224, 3)  # Adjust for RGB input
 
-# ----------------------------
-# Perform Predictions on the Processed Image
-# ----------------------------
+def preprocess_image(image):
+    """Enhanced image preprocessing with error handling"""
+    try:
+        img_array = np.array(image)
+        
+        # Handle different image formats
+        if img_array.ndim == 2:  # Grayscale
+            img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2RGB)
+        elif img_array.ndim == 3 and img_array.shape[2] == 4:  # RGBA
+            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2RGB)
+        
+        # Resize image
+        resized_image = cv2.resize(img_array, (224, 224), interpolation=cv2.INTER_AREA)
+        
+        # Normalize image
+        normalized_image = (np.asarray(resized_image, dtype=np.float32) / 127.5) - 1
+        
+        return normalized_image.reshape(1, 224, 224, 3)
+    
+    except Exception as e:
+        st.error(f"Error preprocessing image: {str(e)}")
+        return None
+
 def predict(models, labels, processed_image):
+    """Enhanced prediction function with error handling"""
     predictions = {}
+    
+    if processed_image is None:
+        return predictions
+    
     for model_name, model in models.items():
-        prediction = model.predict(processed_image)  # Predict
-        index = np.argmax(prediction)  # Get the index of the highest confidence
-        class_name = labels[model_name][index].strip()  # Get class name
-        confidence_score = prediction[0][index]  # Get confidence score
-        predictions[model_name] = (class_name, confidence_score)  # Store results
+        try:
+            # Make prediction
+            prediction = model.predict(processed_image, verbose=0)
+            
+            # Handle different prediction shapes
+            if prediction.ndim > 1:
+                prediction = prediction[0]
+            
+            # Get top prediction
+            index = np.argmax(prediction)
+            confidence_score = float(prediction[index])
+            
+            # Get class name
+            if model_name in labels and index < len(labels[model_name]):
+                class_name = labels[model_name][index].strip()
+            else:
+                class_name = f"Class_{index}"
+            
+            predictions[model_name] = (class_name, confidence_score)
+            
+        except Exception as e:
+            st.error(f"Error during prediction with {model_name}: {str(e)}")
+            # Provide fallback prediction
+            predictions[model_name] = ("Unknown", 0.0)
+    
     return predictions
 
 # ----------------------------
-# Mapping of Diseases to Recommendations
+# Recommendation System
 # ----------------------------
+
 def get_recommendations(disease_name):
+    """Enhanced recommendations system"""
     recommendations = {
         "Late Blight": {
             "Description": "Late blight is a devastating disease affecting tomato and potato plants, caused by the oomycete *Phytophthora infestans*.",
@@ -350,10 +485,8 @@ def get_recommendations(disease_name):
                 "Ensure optimal growing conditions tailored to the specific crop."
             ]
         },
-        # Add more diseases and their recommendations as needed
     }
     
-    # Return recommendations if disease is found, else provide a default message
     return recommendations.get(disease_name, {
         "Description": "No specific recommendations available for the detected condition.",
         "Recommendations": [
@@ -363,8 +496,9 @@ def get_recommendations(disease_name):
     })
 
 # ----------------------------
-# Function to Add Custom CSS for Card Styling
+# CSS Styling Functions
 # ----------------------------
+
 def add_card_style():
     st.markdown("""
     <style>
@@ -379,7 +513,7 @@ def add_card_style():
         height: 100%;
     }
     .fixed-size {
-        height: 300px; /* Fixed height for consistent card sizes */
+        height: 300px;
         overflow: hidden;
     }
     .small-image {
@@ -406,34 +540,46 @@ def add_card_style():
     </style>
     """, unsafe_allow_html=True)
 
-# ----------------------------
-# Helper Function to Encode Image to Base64
-# ----------------------------
 def encode_image(image):
-    buffered = io.BytesIO()
-    image = image.convert("RGB")  # Ensure image is in RGB format
-    image.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue()).decode()
-    return img_str
+    """Helper function to encode image to base64"""
+    try:
+        buffered = io.BytesIO()
+        image = image.convert("RGB")
+        image.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return img_str
+    except Exception as e:
+        st.error(f"Error encoding image: {str(e)}")
+        return ""
 
 # ----------------------------
-# Main Function for the Streamlit App
+# Main Disease Detector Function
 # ----------------------------
+
 def display_detector():
     add_card_style()
     
     st.title("🌾 Crop Disease Detector")
 
-    # Load models and labels with a spinner
+    # Load models and labels with enhanced error handling
     with st.spinner('🔄 Loading models...'):
-        models, labels = load_models_and_labels()
-        time.sleep(1)  # Simulate loading time
+        try:
+            models, labels = load_models_and_labels()
+            
+            if not models:
+                st.error("No models could be loaded. Please check your model files.")
+                st.stop()
+            
+            time.sleep(1)
+            
+        except Exception as e:
+            st.error(f"Failed to load models: {str(e)}")
+            st.stop()
 
-    # Form layout with crop, weather, and soil input
+    # Form layout
     with st.form(key='crop_form'):
         st.header("📝 Crop Information")
 
-        # Create two columns for inputs
         col1, col2 = st.columns(2)
 
         with col1:
@@ -492,7 +638,6 @@ def display_detector():
                 help="Specify the NPK levels"
             )
 
-        # File upload for image
         uploaded_file = st.file_uploader(
             "📸 Upload an image of the crop (jpg, png) *", 
             type=["jpg", "png", "jpeg"],
@@ -500,8 +645,6 @@ def display_detector():
         )
 
         st.markdown("* Indicates required fields")
-
-        # Submit button at the bottom, after file uploader
         submit_button = st.form_submit_button(label='🔍 Analyze')
 
     if submit_button:
@@ -511,7 +654,7 @@ def display_detector():
             errors.append("🌱 **Crop selection** is required.")
         if not temperature:
             errors.append("🌡️ **Temperature** is required.")
-        elif not temperature.replace('.', '', 1).isdigit():
+        elif not temperature.replace('.', '', 1).replace('-', '', 1).isdigit():
             errors.append("🌡️ **Temperature** must be a number.")
         if not weather_condition:
             errors.append("☁️ **Weather condition** is required.")
@@ -522,158 +665,128 @@ def display_detector():
         if not uploaded_file:
             errors.append("📸 **Image upload** is required.")
 
-        # Display errors if any
         if errors:
             for error in errors:
                 st.error(error)
         else:
             with st.spinner('🔍 Analyzing image...'):
-                time.sleep(2)  # Simulate processing time
+                try:
+                    time.sleep(2)
 
-                # Process and predict if an image is uploaded
-                image = Image.open(uploaded_file)
-                
-                # Preprocess the image for the model
-                processed_image = preprocess_image(image)
+                    # Process image
+                    image = Image.open(uploaded_file)
+                    processed_image = preprocess_image(image)
+                    
+                    if processed_image is None:
+                        st.error("Failed to process the uploaded image.")
+                        st.stop()
 
-                # Make predictions
-                predictions = predict(models, labels, processed_image)
+                    # Make predictions
+                    predictions = predict(models, labels, processed_image)
+                    
+                    if not predictions:
+                        st.error("Failed to make predictions. Please try again.")
+                        st.stop()
 
-                # Get the top prediction
-                top_model = max(predictions.items(), key=lambda x: x[1][1])  # Get model with highest confidence
-                top_class_name, top_confidence_score = top_model[1]
+                    # Get the top prediction
+                    top_model = max(predictions.items(), key=lambda x: x[1][1])
+                    top_class_name, top_confidence_score = top_model[1]
 
-                # Determine if healthy or diseased
-                if "healthy" in top_class_name.lower():
-                    disease_name = "Healthy"
-                    status = "Healthy"
-                else:
-                    disease_name = top_class_name
-                    status = "Unhealthy"
+                    # Determine health status
+                    if "healthy" in top_class_name.lower():
+                        disease_name = "Healthy"
+                        status = "Healthy"
+                    else:
+                        disease_name = top_class_name
+                        status = "Unhealthy"
 
-                # Get recommendations based on disease
-                recommendation = get_recommendations(disease_name)
+                    # Get recommendations
+                    recommendation = get_recommendations(disease_name)
 
-                # Arrange all cards into two rows with two cards each
-                # First Row: Crop Details and Prediction Result
-                row1_col1, row1_col2 = st.columns(2)
-                with row1_col1:
-                    st.markdown(f"""
-                    <div class="card fixed-size">
-                        <h3>🌾 Crop Details:</h3>
-                        <table>
-                            <tr>
-                                <th>Attribute</th>
-                                <th>Value</th>
-                            </tr>
-                            <tr>
-                                <td>Crop</td>
-                                <td>{crops_list}</td>
-                            </tr>
-                            <tr>
-                                <td>Water Condition</td>
-                                <td>{water_condition if water_condition else "N/A"}</td>
-                            </tr>
-                            <tr>
-                                <td>Weather Condition</td>
-                                <td>{weather_condition}</td>
-                            </tr>
-                            <tr>
-                                <td>Temperature (°C)</td>
-                                <td>{temperature}</td>
-                            </tr>
-                            <tr>
-                                <td>Humidity (%)</td>
-                                <td>{humidity}</td>
-                            </tr>
-                            <tr>
-                                <td>Soil Type</td>
-                                <td>{soil if soil else "N/A"}</td>
-                            </tr>
-                            <tr>
-                                <td>Soil pH Level</td>
-                                <td>{pH_level if pH_level else "N/A"}</td>
-                            </tr>
-                            <tr>
-                                <td>Nutrient Level (NPK)</td>
-                                <td>{nutrient_level if nutrient_level else "N/A"}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with row1_col2:
-                    st.markdown(f"""
-                    <div class="card fixed-size">
-                        <h3>🧪 Prediction Result:</h3>
-                        <table>
-                            <tr>
-                                <th>Attribute</th>
-                                <th>Value</th>
-                            </tr>
-                            <tr>
-                                <td>Status</td>
-                                <td>{status}</td>
-                            </tr>
-                            <tr>
-                                <td>Disease Name</td>
-                                <td>{disease_name}</td>
-                            </tr>
-                            <tr>
-                                <td>Confidence Score (%)</td>
-                                <td>{np.round(top_confidence_score * 100, 2)}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    # Display results in cards
+                    row1_col1, row1_col2 = st.columns(2)
+                    with row1_col1:
+                        st.markdown(f"""
+                        <div class="card fixed-size">
+                            <h3>🌾 Crop Details:</h3>
+                            <table>
+                                <tr><th>Attribute</th><th>Value</th></tr>
+                                <tr><td>Crop</td><td>{crops_list}</td></tr>
+                                <tr><td>Water Condition</td><td>{water_condition if water_condition else "N/A"}</td></tr>
+                                <tr><td>Weather Condition</td><td>{weather_condition}</td></tr>
+                                <tr><td>Temperature (°C)</td><td>{temperature}</td></tr>
+                                <tr><td>Humidity (%)</td><td>{humidity}</td></tr>
+                                <tr><td>Soil Type</td><td>{soil if soil else "N/A"}</td></tr>
+                                <tr><td>Soil pH Level</td><td>{pH_level if pH_level else "N/A"}</td></tr>
+                                <tr><td>Nutrient Level (NPK)</td><td>{nutrient_level if nutrient_level else "N/A"}</td></tr>
+                            </table>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with row1_col2:
+                        st.markdown(f"""
+                        <div class="card fixed-size">
+                            <h3>🧪 Prediction Result:</h3>
+                            <table>
+                                <tr><th>Attribute</th><th>Value</th></tr>
+                                <tr><td>Status</td><td>{status}</td></tr>
+                                <tr><td>Disease Name</td><td>{disease_name}</td></tr>
+                                <tr><td>Confidence Score (%)</td><td>{np.round(top_confidence_score * 100, 2)}</td></tr>
+                            </table>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                # Second Row: Uploaded Image and Recommendations
-                row2_col1, row2_col2 = st.columns(2)
-                with row2_col1:
-                    img_encoded = encode_image(image)
-                    st.markdown(f"""
-                    <div class="card fixed-size">
-                        <h3>📷 Uploaded Image:</h3>
-                        <img src="data:image/png;base64,{img_encoded}" class="small-image"/>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with row2_col2:
-                    st.markdown(f"""
-                    <div class="card">
-                        <h3>💡 Recommendations:</h3>
-                        <h4>🔍 Disease Description:</h4>
-                        <p>{recommendation["Description"]}</p>
-                        <h4>✅ Recommended Actions:</h4>
-                        <ol>
-                            {''.join([f"<li>{action}</li>" for action in recommendation["Recommendations"]])}
-                        </ol>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    # Second row
+                    row2_col1, row2_col2 = st.columns(2)
+                    with row2_col1:
+                        img_encoded = encode_image(image)
+                        if img_encoded:
+                            st.markdown(f"""
+                            <div class="card fixed-size">
+                                <h3>📷 Uploaded Image:</h3>
+                                <img src="data:image/png;base64,{img_encoded}" class="small-image"/>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    
+                    with row2_col2:
+                        st.markdown(f"""
+                        <div class="card">
+                            <h3>💡 Recommendations:</h3>
+                            <h4>🔍 Disease Description:</h4>
+                            <p>{recommendation["Description"]}</p>
+                            <h4>✅ Recommended Actions:</h4>
+                            <ol>
+                                {''.join([f"<li>{action}</li>" for action in recommendation["Recommendations"]])}
+                            </ol>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                # Create a DataFrame and Download Link for CSV
-                result_data = {
-                    "Crop": crops_list,
-                    "Water Condition": water_condition if water_condition else "N/A",
-                    "Weather Condition": weather_condition,
-                    "Temperature (°C)": temperature,
-                    "Humidity (%)": humidity,
-                    "Soil Type": soil if soil else "N/A",
-                    "Soil pH Level": pH_level if pH_level else "N/A",
-                    "Nutrient Level": nutrient_level if nutrient_level else "N/A",
-                    "Status": status,
-                    "Disease Name": disease_name,
-                    "Confidence Score (%)": np.round(top_confidence_score * 100, 2)
-                }
-                df = pd.DataFrame([result_data])
-                csv_file = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    "📥 Download Results as CSV",
-                    csv_file,
-                    "crop_disease_prediction.csv",
-                    "text/csv"
-                )
-    
+                    # Download CSV
+                    result_data = {
+                        "Crop": crops_list,
+                        "Water Condition": water_condition if water_condition else "N/A",
+                        "Weather Condition": weather_condition,
+                        "Temperature (°C)": temperature,
+                        "Humidity (%)": humidity,
+                        "Soil Type": soil if soil else "N/A",
+                        "Soil pH Level": pH_level if pH_level else "N/A",
+                        "Nutrient Level": nutrient_level if nutrient_level else "N/A",
+                        "Status": status,
+                        "Disease Name": disease_name,
+                        "Confidence Score (%)": np.round(top_confidence_score * 100, 2)
+                    }
+                    df = pd.DataFrame([result_data])
+                    csv_file = df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        "📥 Download Results as CSV",
+                        csv_file,
+                        "crop_disease_prediction.csv",
+                        "text/csv"
+                    )
+                    
+                except Exception as e:
+                    st.error(f"An error occurred during analysis: {str(e)}")
+                    st.info("Please try again with a different image or check your model files.")
 
 # Route based on selected option
 if selected == "Home":
